@@ -1,0 +1,583 @@
+import { Project } from '../types';
+import { CATEGORIES } from '../data';
+import {
+  X, Server, Database, AlertCircle, ArrowRight, Layers, Workflow,
+  Check, ClipboardList, HelpCircle, FileText, Target, Award, List, Sparkles,
+  ChevronRight, ChevronDown, MessageSquare, Zap, Shield, Send,
+  Smartphone, Monitor, Clock, AlertTriangle, Inbox, RefreshCw,
+  Plug, Eye, CheckCircle2, Loader2, Bot, Activity, Edit2, ShieldAlert,
+  Star, Lock, UserCheck,
+  ArrowLeft, Mic, Volume2, Phone, Wifi, MapPin, Disc, PhoneCall, LogIn, Loader,
+  Brain, BookOpen, Thermometer, Gauge, TrendingUp, TrendingDown, AlertOctagon,
+  Cpu, BarChart3, Radio, Battery, Power, Fan, Settings, Play, Pause, User,
+  Award as AwardIcon, Flame, Snowflake, Wind, Terminal, Search, Globe, ExternalLink, Bell
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ProjectDetailModalProps {
+  project: Project | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectProject: (p: Project) => void;
+}
+
+interface ProjectDetailsItem {
+  category: string;
+  title: string;
+  valueStatement: string;
+  tags: string[];
+  blocks: {
+    bg: string;
+    tech: string;
+    role: string;
+    highlights: string;
+    metrics: string;
+    links: string[];
+  };
+  recommendations: string[];
+}
+
+// ─── Data (keep existing entries for other projects) ────────────────────────
+
+const projectDetailsData: Record<string, ProjectDetailsItem> = {
+  "rag-hotel": {
+    category: "智能问答 / AGENT",
+    title: "知宿 (InnoStay)",
+    valueStatement: "基于 RAG 技术的酒店专属全生命周期 AI 助理系统",
+    tags: ["RAG", "大模型", "企业微信集成", "向量数据库", "降本增效"],
+    blocks: {
+      bg: "针对酒店长尾咨询重复率高、新人培训周期长的痛点，导致夜间客诉严重、评价受损问题。",
+      tech: "基于 DeepSeek V4 与 Qwen Embedding 进行向量化切片与检索对齐，打通企微与小程序端并实现无幻觉回答。",
+      role: "0 到 1 负责产品整体规划、状态机定义、多模态文档解析评测集组织与技术协同，实现工单自动化流转。",
+      highlights: "设计无感接管机制：当 AI 置信度低于阈值时，自动触发状态机流转，派单至前台人工接管，保障最终质量。",
+      metrics: "新人系统培训流程压缩至 1 天，日常重复咨询工作量减少约 20%，客诉降低 95%。",
+      links: ["查看 Notion PRD", "系统设计图", "服务效能报告"]
+    },
+    recommendations: ["idc-llm", "bidding-agent"]
+  },
+  "idc-llm": {
+    category: "智能问答 / AGENT",
+    title: "数据中心运维问答大模型",
+    valueStatement: "封装 IDC 智能体矩阵，打造智能控温与故障诊断专家系统",
+    tags: ["RAG", "大模型", "知识库", "故障诊断", "降本增效", "风险防控"],
+    blocks: {
+      bg: "IDC 机房一线故障排查响应时间长，由于传统监控和复杂架构叠加，资深专家经验难以结构化沉淀。",
+      tech: "云天系统，集成分布式能效分析平台与大模型知识库，封装具备多轮问答评测能力的智能化运维 Agents 矩阵。",
+      role: "主导大模型产品策略、算法对齐与业务闭环，协同暖通及运维团队，打通多角色、异构系统控制链路。",
+      highlights: "首发包含『AI 故障诊断、PUE 优化大师』在内的 IDC 智能体（Agents）矩阵，实现多源时序数据分析判定。",
+      metrics: "机房一线故障排查响应及新人培训考评周期缩短 40% 以上，降噪率提升 90% 以上。",
+      links: ["系统架构", "算法对齐说明", "灾备应急预案"]
+    },
+    recommendations: ["rag-hotel", "bidding-agent"]
+  },
+  "bidding-agent": {
+    category: "智能问答 / AGENT",
+    title: "全网标讯与新开业酒店监测",
+    valueStatement: "LLM Agent 自动化商商机引擎，实现非结构化文本的秒级精准商机转化",
+    tags: ["AI爬虫", "大模型", "信息抽取", "CRM集成", "增收获客"],
+    blocks: {
+      bg: "多平台、高并发的非结构化招投标和新闻文本处理成本高、清洗效率极低，易导致高价值线索流失。",
+      tech: "利用 Python 构建关键词频次阈值矩阵，级联 Gemini 2.5 Flash-Lite 与 DeepSeek-Chat V4 进行快速过滤提取。",
+      role: "主导成本控制架构设计，亲自编写数据预处理逻辑，全权负责 Prompt 系统性调优与标准 JSON 字段定义。",
+      highlights: "设计『本地规则 -> 轻量过滤 -> 深度提取』的三层级联过滤方案，在零 API 成本下丢弃超 80% 垃圾文本。",
+      metrics: "全网线索无遗漏，主力大模型 API 算力成本整体降低 75% 以上，商机精准度达 99% 以上。",
+      links: ["成本控制架构图", "Prompt定义范式", "CRM对接API"]
+    },
+    recommendations: ["rag-hotel", "idc-llm"]
+  },
+  "idc-twin": {
+    category: "监控大屏 & 数字孪生",
+    title: "数据中心运维数据治理大屏（数字孪生）",
+    valueStatement: "智算中心园区软硬一体化部署，构建数字化能耗、资产与空间矩阵",
+    tags: ["数字孪生", "Three.js", "BIM", "管线可视化", "实时监控", "数据驱动决策"],
+    blocks: {
+      bg: "大型智算中心空间、资产与能耗数据孤立，缺乏直观的工业级全局管控底座，管理层难以极速感知整体能热态势。",
+      tech: "基于 Three.js 与 BIM 技术搭建 3D 数字孪生治理平台，应用 Draco 网格压缩实现千萬级传感器测点实时高并发流展现。",
+      role: "全面主导并定义大屏数智化运营系统的体验语言，引入温场热岛 Kriging 动态差色差值算法，打破子系统孤立状态。",
+      highlights: "围绕『楼宇能耗、设备资产、空间与人』构建数字化功能矩阵，设计时序与空间双向对比条形图展现实时温场。",
+      metrics: "全面保障某 260 亩智算中心园区业务连续性达 100%，系统通过 Uptime M&O 国际认证，跑满 60FPS。",
+      links: ["3D演示视频", "交互规范文档", "Kriging Shader源码"]
+    },
+    recommendations: ["building-monitor", "station-platform"]
+  },
+  "building-monitor": {
+    category: "监控大屏 & 数字孪生",
+    title: "智慧楼宇监控大屏",
+    valueStatement: "升级传统物业大屏为高附加值园区生态数字驾驶舱",
+    tags: ["数字孪生", "能耗分析", "人员定位", "工位利用率", "数据驱动决策", "降本增效"],
+    blocks: {
+      bg: "传统楼宇运营粗放，工位与会议室闲置率高，空间能源浪费严重且设备故障无法实时精确定位和反控。",
+      tech: "引入时序与空间双向对比算法，融合非侵入式（NILM）电谐波诊断特征，深度绑定物联网运管平台与低代码工单流引擎。",
+      role: "负责前沿视觉呈现效果定义与数字孪生交互语言规划，跑通物理反调与设备效率最大化业务闭环。",
+      highlights: "引入工位与会议室利用率波动分析，将实时空间能耗与设备资产健康度全流程透视并进行出水温差调控。",
+      metrics: "大幅降低办公室闲置率，通过精准排查定位空间能源浪费，资产效率达到最大化，能效降 18.2%。",
+      links: ["指标设计白皮书", "BACnet底层对接文档", "楼宇ESG盘账包"]
+    },
+    recommendations: ["idc-twin", "subway-window"]
+  },
+  "station-platform": {
+    category: "监控大屏 & 数字孪生",
+    title: "车站运营监控平台（大屏部分）",
+    valueStatement: "多维环境指标时序沉淀，打破空间孤立，定义动态数字孪生交互语言",
+    tags: ["数字孪生", "设备状态可视化", "环境监测", "故障定位", "风险防控", "降本增效"],
+    blocks: {
+      bg: "地铁车站运营缺乏全场景跨时空信息触达，子系统状态孤立，潮汐大客流极易造成月台和出入口严重拥堵隐患。",
+      tech: "对接边缘端自动化感知计算，搭建轻量级 2.5D SVG 拓扑网络，将多维环境指标进行时序沉淀并推送到车站引导屏。",
+      role: "负责车站大屏精准引导交互与跨时空数据流转逻辑的全面主导，配置 JVM 级测点合并（Debounce）确保不卡顿。",
+      highlights: "定义『手机端预唤醒 — 车站大屏精准引导 — 车载 55 寸 OLED 魔窗提醒』的跨端联动机制及故障一键漂移监控。",
+      metrics: "高效引导乘客分散候车，显著削减高峰期月台滞留时间，整体能效与大客流出行秩序显著提效 15.5%。",
+      links: ["跨端数据流转图", "SVG绘图规范", "时序缓存限流配置"]
+    },
+    recommendations: ["idc-twin", "subway-window"]
+  },
+  "subway-window": {
+    category: "监控大屏 & 数字孪生",
+    title: "地铁'魔窗'导乘项目",
+    valueStatement: "首创车地联动 3D 视觉导乘体验，完成一线城市核心线路软硬一体化部署",
+    tags: ["边缘计算", "3D孪生", "多模态感知", "车地联动", "乘客体验", "产业生态闭环"],
+    blocks: {
+      bg: "传统地铁车载导乘设备画面单一，信息维度低，且地铁高速颠簸多尘、车室内逆温逆光，抗干扰度低。",
+      tech: "基于 55 寸 OLED 屏及 4K 高清透明屏，利用 Pixi.js 重构 WebGL 自适应透明发色并打通地标自感纠偏补偿。",
+      role: "主导车载 3D 孪生屏体验定义与全周期管理，引入温度安全保护自检测制（Thermal Throttle），延长屏幕寿命。",
+      highlights: "首创透明玻璃车窗 3D 浮雕轨迹呈现，同时在 APP 端与车载魔窗同步推出即将来车车厢『红黄蓝』三色拥挤度。",
+      metrics: "完成北上深一线城市核心线路的软硬一体化部署，到站物理定位分毫不差，车载 3D 帧率保持 55+ 优秀水平。",
+      links: ["魔窗实拍视频", "OLED物理白皮书", "TCMS接口总线文档"]
+    },
+    recommendations: ["idc-twin", "station-platform"]
+  },
+  "idc-iot": {
+    category: "IoT设备管理 & 动环监控",
+    title: "数据中心动环监控（电力/环境/UPS/蓄电池/消防）",
+    valueStatement: "工业级基础设施综合管理底座，承载千万级传感器测点实时并发流",
+    tags: ["IoT", "Modbus/SNMP", "实时告警", "故障根因分析", "风险防控", "降本增效"],
+    blocks: {
+      bg: "数据中心配电空调各种非标协议极其混杂，上报数据呈海量高并发状态，值班人员极易由于冗余警告产生疲劳。",
+      tech: "基于 Modbus/SNMP 自研设备物模型，定义『秒级判断+4级阈值去重』死区去噪及告警压缩，接入高性能 Kafka 队列。",
+      role: "负责物联网一体化运管平台规划，设计南向网关热插拔适配规范，确保控制指令在 2s 内反控回下风机温控动作。",
+      highlights: "跑通『异常告警 — 事件总线触发 — 自动派工单 — 移动巡检 — 线上闭环』全链路工业级底座闭环。",
+      metrics: "成功降低运维人员空震与噪音疲劳 70% 以上，支撑千万级传感器测点的高并发高吞吐传输。",
+      links: ["协议映射表说明", "南向控制器开发包", "Kafka限流方案"]
+    },
+    recommendations: ["dcim-base", "ems-system"]
+  },
+  "dcim-base": {
+    category: "IoT设备管理 & 动环监控",
+    title: "DCIM（数据中心基础设施管理）",
+    valueStatement: "集'监、管、控、维'于一体的基础设施运管平台",
+    tags: ["容量管理", "能效分析", "资产管理", "报表", "数据驱动决策", "降本增效"],
+    blocks: {
+      bg: "动环系统无法跟运维流程有机整合，传统运维处于割裂状态，资产 CMDB、电力容量与工单多有账实错漏。",
+      tech: "基于无向图和 FMS Event Bus 故障溯源，设计机房温度、承重、配电空间三色容量沙盘评估及资产字典系统。",
+      role: "产品线全生命周期管理，全面设计配线台账一站式自感更新与 2s 极速派发流程关联机制。",
+      highlights: "打通异常告警、资产网络与自动工单派发链路，实现系统从异常判定到值班 PDA 接收工单耗时不超过 2s。",
+      metrics: "核心故障平均修复时间（MTTR）缩短 45%，资产台账正确率在大型试点实现账实 100% 合一。",
+      links: ["DCIM产品方案", "CMDB数据模型说明", "自动化派单日志分析"]
+    },
+    recommendations: ["idc-iot", "ems-system"]
+  },
+  "ems-system": {
+    category: "IoT设备管理 & 动环监控",
+    title: "EMS能源管理系统",
+    valueStatement: "搭建 TB 级分布式能效分析平台，打通能效调优与黑灯节能闭环",
+    tags: ["能源采集", "PUE优化", "碳排放管理", "基线预警", "节能调优", "降本增效", "风险防控"],
+    blocks: {
+      bg: "大型绿色园区能耗高昂、电表游离、交叉对账全靠手工拉超大 Excel 分析，且缺乏对空调制冷预测的调优模型。",
+      tech: "构建时序 Clickhouse 大规模汇总计算结构，配合 Prophet 机器学习框架进行外部气象和暖通能效精准建模预测。",
+      role: "主导 AI 驱动的暖通能效预测产品策略与决策，建立灰度评估体系与阶段用耗能表达式规则引擎。",
+      highlights: "通过追踪暖通冷量参数与实时负荷，成功打通明日储能/PUE 调优计算，并自动导出 ISO50001 合规审计包。",
+      metrics: "能效汇总分析时间降低 95%，对暖通负荷预测偏离低于 5.2%，成功实现楼栋 PUE 极限优化降耗目的。",
+      links: ["PUE优化算法白皮书", "ISO审计说明书", "Prophet预测代码模型"]
+    },
+    recommendations: ["idc-iot", "dcim-base"]
+  },
+  "hotel-linen": {
+    category: "SaaS管理平台 & 工单系统",
+    title: "酒店布草全生命周期管理SaaS",
+    valueStatement: "打造'出厂级 RFID 硬件 + AI 分析决策 + SaaS 运营'的一体化管理系统",
+    tags: ["RFID硬件集成", "全生命周期", "库存管理", "品质追溯", "降本增效", "风险防控"],
+    blocks: {
+      bg: "连锁酒店布草物资交接容易错漏、水洗损耗难以把控，布草加工厂和酒店容易因为破损丢失账期财务扯皮纠纷。",
+      tech: "整合出厂级 RFID 硬件的多标签高密集通道算法，构建结合水洗特征的水洗寿命折旧特征预测及分期账单自动计算。",
+      role: "主导 RFID 通道交互协议控制与物资流转 Handshake 机制产品定义，跑通跨店动态资产划拨、分账业财一体化闭环。",
+      highlights: "一千件被服两秒内利用多标签扫描盘存完毕，读取通过率高，并将历史消耗与物资补货一键关联，输出交易结算账单。",
+      metrics: "通过率高达 99.98%，跨店物资盘点流失错账率直接降低 95%，提高大客户粘性壁垒。",
+      links: ["RFID硬件协议文档", "水洗寿命算法函数", "多租户发票与结算系统"]
+    },
+    recommendations: ["idc-dcom", "subway-settle"]
+  },
+  "idc-dcom": {
+    category: "SaaS管理平台 & 工单系统",
+    title: "数据中心DCOM（工单/巡检/维保）",
+    valueStatement: "构建基于 ITIL 架构的低代码工单流引擎",
+    tags: ["ITIL", "工单系统", "巡检计划", "知识库", "降本增效", "数据驱动决策"],
+    blocks: {
+      bg: "传统数据中心协办流程呆板、不可视，协作链路长卡点多，跨地域售后的巡检维保无法支持高时限越级流管。",
+      tech: "基于标准 ITIL 模型自研 DAG 流程可视化拓扑引擎，生成高度自定义、轻量的 JSON 表单和 SLA 阶梯超时自动越级推送。",
+      role: "全面主导 DCOM 系统状态机逻辑设计，规划工单并发会签与越限 SLA Redis 延迟流监听器引擎机制。",
+      highlights: "打通过滤后的动环报警实时启动巡检任务的链路，支持特许任务跨多省会签与现场人员 PDA 定位匹配。",
+      metrics: "工单平均搁置搁误率下降 35% 以上，跨越式杜绝超时搁置挂账，提升人员排班调度合理度。",
+      links: ["DSL Canvas拖拽规范", "ITIL合规资产维保文档", "SLA超时越级队列部署"]
+    },
+    recommendations: ["hotel-linen", "subway-settle"]
+  },
+  "subway-settle": {
+    category: "SaaS管理平台 & 工单系统",
+    title: "呼和浩特银联前置系统（对账管理）",
+    valueStatement: "负责高并发金融级清分对账与信用垫资风控的底层核心前置系统设计",
+    tags: ["支付清分", "对账引擎", "风控黑名单", "RBAC", "风险防控", "增收获客"],
+    blocks: {
+      bg: "地铁行车及清分交易结算系统面对超大并发时极其容易产生账目精度误差、单边账溢漏，给『先乘后付』信用垫资带来资金敞口。",
+      tech: "精确映射 O-D 线路轨迹包，构建基于高精度 BigDecimal 三角勾兑与错账轧差流式滑动时间窗口自挂接平账算法。",
+      role: "负责底层前置对账系统核心财务流和风控拦截机制设计，引入极精细 RBAC 安全控制。",
+      highlights: "针对地铁单边欠账，构建了自动重拨与对账期追溯拉长至 90 天机制，自研自动黑名单秒级追缴风控功能。",
+      metrics: "账目清分正确度达到金融级保障，全路网乘车风控拦截与坏账漏损率减少 1005%。",
+      links: ["清分对账引擎设计", "BigDecimal高精度算法说明", "先乘后付金融拦截规范"]
+    },
+    recommendations: ["hotel-linen", "idc-dcom"]
+  },
+  "subway-perception": {
+    category: "AI识别 & 边缘计算",
+    title: "地铁综合感知系统（AI大脑+多端联动）",
+    valueStatement: "高危异常行为秒级抓取并自动调取高清视频片段，杜绝『警报疲劳』",
+    tags: ["边缘计算", "计算机视觉", "行为识别", "事件联动", "风险防控", "降本增效"],
+    blocks: {
+      bg: "地铁扶梯异常行为（逆行摔倒）及卧车台高危情况如果仅靠人眼巡视，反映迟滞，极易酿成本质安全风险客伤事故。",
+      tech: "集成高性能 DeepStream 图像处理器并对 YOLO 模型做裁剪，将边缘端多视频切片推理控制在极低延迟范围内。",
+      role: "主导设计 9 大类特定客伤行为判定策略、边缘硬件 Jetson 选型、车控室一键 SOP 应急弹屏下发系统。",
+      highlights: "高危异常行为秒级抓取响应，预缓冲截取报警前 5s 视频，自动推送该段高清视频供车控室秒级核实，消除空警疲劳。",
+      metrics: "边缘计算判定至司机前哨确认需 3s，突发异常报警交互 SOP 全链路控制在 8s 黄金极速响应。",
+      links: ["AI大脑联动架构", "DeepStream视频容器规范", "轨道交通突发客伤应急处置"]
+    },
+    recommendations: ["dms-driver", "passenger-anomaly"]
+  },
+  "dms-driver": {
+    category: "AI识别 & 边缘计算",
+    title: "DMS司机疲劳监测",
+    valueStatement: "基于人脸关键点与边缘推理的司机疲劳/分心行为高精准前哨初筛",
+    tags: ["人脸关键点", "疲劳检测", "分心行为识别", "边缘推理", "风险防控"],
+    blocks: {
+      bg: "城轨/地铁司机室常由于长期作业引入疲劳及操作分心，必须依靠可靠、实时的机载前哨监测装置，防万错一。",
+      tech: "利用轻量 YOLO-DMS 人脸特征和闭眼/大哈欠周期判别，融合边缘推理与防抖逻辑，抗衡灰尘和抖动环境干扰。",
+      role: "负责边缘判定及现场二次除噪去伪逻辑定义，打通局域网 RTSP 画面向高级 WebRTC 超低延时网页投流的开发协同。",
+      highlights: "端侧高频采集，遇公网断连时启动 500G 离线环形物理缓存锁存，不间断监控，网络恢复后自感异步上送云端。",
+      metrics: "端侧边缘抓取计算延时小于 50ms，平均带宽降 92% 以上，保障司机长途驾驶生命线安全可靠。",
+      links: ["Jetson DMS软件配置", "防抖图像权重标定", "WebRTC超低延迟流引擎说明"]
+    },
+    recommendations: ["subway-perception", "passenger-anomaly"]
+  },
+  "passenger-anomaly": {
+    category: "AI识别 & 边缘计算",
+    title: "乘客异常行为识别（倒地/打架等）",
+    valueStatement: "AI 边缘判定至司机前哨确认，高危行为秒级抓取，有效杜绝调度警报疲劳",
+    tags: ["计算机视觉", "实时检测", "应急处置", "风险防控"],
+    blocks: {
+      bg: "长途高速重载列车、密闭隧道区间内发生的打斗抢劫、晕倒无人知晓是轨道交通安检和紧急施救极大的管理盲点。",
+      tech: "基于国产 RK3588 车载硬核工控机，利用 YOLOv8-Nano 配合姿态 ST-GCN 算法进行车厢倒地肢体关键点轻量量化加速。",
+      role: "主导车载异常状态机流转需求订立，规划 AI 二次过滤、本地报警不跳闸整车电路的安全设计以及装配抗震测试。",
+      highlights: "首创热部署 AI 安控网，将盒子功耗限制在 15W 以下，同时检测到冲突倒地时立即在司机面板进行弹框提供推荐处置流。",
+      metrics: "实现车载边缘判定秒级高危抓取，对晕厥倒地识别准确度高，荣获中国软件工程合规大奖。",
+      links: ["RK3588车规盒子物理参数", "ONNX推理及模型导出配置", "姿态关键点检测算法分析"]
+    },
+    recommendations: ["subway-perception", "dms-driver"]
+  },
+  "agri-platform": {
+    category: "产业互联网平台 / B2B/B2C",
+    title: "农产品B2B/B2C平台（农技/内容/农资/合作社）",
+    valueStatement: "从 0 到 1 规划农业服务一体化小程序，全面赋能 B 端合作社",
+    tags: ["全栈", "O2O", "知识付费", "地图服务", "RBAC", "增收获客", "产业生态闭环"],
+    blocks: {
+      bg: "各农业合作社和末端种植农户，缺乏专业即时病害断诊通道，且在买肥配车物流中由于多级分销存在严重渠道高费率克扣。",
+      tech: "基于 LBS 地理位置定位技术配合 O2O 货运配载，应用 Taro 高效构建跨三方阵营角色跨端共享平台。",
+      role: "0-1 全权负责华北农服小程序的方案规划、界面原型、跨层分账财务计算及症状智能筛选方案编写。",
+      highlights: "推出『症状专家智判选择 + 微信定向付费诊治 + 首推病叶 AI 大模比对』，让低学历农户一键上传害虫图获取农资撮合。",
+      metrics: "打通农资供应链扁平交易，错差清账账实 100% 轧平，提升农户病死损作物成活效率达 25%。",
+      links: ["Taro跨端UI原型图", "多角色分账与资金划拨规范", "智能病叶库LBS定位图"]
+    },
+    recommendations: ["maas-app"]
+  },
+  "maas-app": {
+    category: "产业互联网平台 / B2B/B2C",
+    title: "智慧出行APP（地铁扫码/导航/便民）",
+    valueStatement: "主导 MaaS 移动端一体化出行架构设计，引入多源数据融合算法",
+    tags: ["移动端", "扫码支付", "站内导航", "实时动态", "增收获客", "产业生态闭环"],
+    blocks: {
+      bg: "超大千万旅客规模的交通系统缺少一站式跨工具结算渠道，在火车站、地铁接驳时无法极速给到最优的多源车厢拥堵推荐。",
+      tech: "整合 TCMS 空气弹簧轴重传感器与公交、地铁扫码网关，使用 React Native 搭载大客流瞬间高并发抗冲高防网络架构。",
+      role: "主导一站式 MaaS 出行用户交互规范拟定、路径高阶多端数据融合以及碳积分商城生态产品定义。",
+      highlights: "在手机客户端首发将即将来车拥挤度进行『红黄蓝』三色拟真热力图形态展示，实现多端数据秒级无感同步。",
+// ─── RAG Hotel Full Detail View ──────────────────────────────────────────────
+
+function RAGHotelDetailView({ project }: { project: Project }) {
+  const item = projectDetailsData['rag-hotel'];
+
+  const lifecycleStages = [
+    {
+      label: '入住前',
+      sublabel: '公域外挂',
+      color: 'blue',
+      nodes: [
+        { icon: '\u2753', text: 'OTA提问' },
+        { icon: '\u{1F517}', text: 'Webhook' },
+        { icon: '\u{1F4DA}', text: 'RAG售前知识库' },
+        { icon: '\u{1F4E8}', text: '流式回传' },
+      ],
+    },
+    {
+      label: '入住中',
+      sublabel: '私域管家',
+      color: 'emerald',
+      nodes: [
+        { icon: '\u{1F4F1}', text: '扫一房一码' },
+        { icon: '\u{1F513}', text: 'Session激活' },
+        { icon: '\u{1F3AF}', text: 'Action-Agent槽位填充' },
+      ],
+    },
+    {
+      label: '离店后',
+      sublabel: '声誉控制',
+      color: 'amber',
+      nodes: [
+        { icon: '\u{1F30A}', text: 'OTA评价流' },
+        { icon: '\u{1F4AC}', text: 'Aspect情感拆解' },
+        { icon: '\u2705', text: '好评发布/差评防火墙工单' },
+      ],
+    },
+  ];
+
+  const colorMap: Record<string, string> = {
+    blue: 'text-blue-500 bg-blue-50 border-blue-200',
+    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    amber: 'text-amber-600 bg-amber-50 border-amber-200',
+  };
+
+  return (
+    <>
+      {/* 区块0：顶部大框 */}
+      <div className="pt-20 border-b border-zinc-100 pb-6 bg-white">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-emerald-600">
+            INNOSTAY SYSTEM v2.6 \u00b7 RAG INTELLIGENT FRONT DESK
+          </span>
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-950 leading-none">
+          知宻f <span className="text-emerald-600">(InnoStay)</span>
+        </h2>
+        <p className="text-sm text-zinc-500 mt-3 leading-relaxed max-w-xl">
+          基于 RAG 技术的酒店专属全生命周期 AI 助理系统，深度集成 PMS 业务接口与内部 SOP 知识库，
+          智能过滤并分流常见高频客诉请求，降低夜间前台值班人力负荷。
+        </p>
+      </div>
+
+      {/* 区块1：标签行 */}
+      <div className="py-5 border-b border-zinc-100 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-400 shrink-0">// 技术选型</span>
+          {['RAG 架构', 'LLM 意图解析', '向量数据库', 'SSE 流式内核', 'WebSocket 长连接', 'RPA/DOM 注入'].map(tag => (
+            <span key={tag} className="bg-zinc-100 text-zinc-700 text-[10.5px] font-mono font-bold px-2.5 py-1 rounded-xl border border-zinc-200">
+              {tag}
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-zinc-400 shrink-0">// 效能价值</span>
+          {[
+            { label: '客诉自动解决率', value: '45.0%' },
+            { label: '知识召回率', value: '93.4%' },
+            { label: '客诉响应', value: '1.2 秒' },
+            { label: '夜间人工降本', value: '60.0%' },
+          ].map(m => (
+            <span key={m.label} className="border border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-xl">
+              {m.label} <span className="font-mono text-emerald-600">{m.value}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 区块2：系统架构卡片 */}
+      <div className="mt-8 space-y-3">
+        <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block pl-0.5">
+          // SYSTEM ARCHITECTURE / 系统架构
+        </span>
+
+        <div className="bg-[#0A0A0C] rounded-2xl p-4 border border-zinc-800">
+          <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-zinc-600 mb-3">
+            CORE ARCHITECTURE MENTAL MODEL / 核心架构心智
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            {['意图分类', '动态路由', '结构化输出 / 异步动作'].map((step, i) => (
+              <div key={i} className="flex items-center gap-2 sm:gap-3">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2">
+                  <span className="text-[11px] font-bold font-mono text-emerald-400">{step}</span>
+                </div>
+                {i < 2 && <ArrowRight className="h-4 w-4 text-emerald-600 shrink-0" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {lifecycleStages.map((stage, si) => (
+            <div key={si} className={`rounded-2xl border p-4 ${colorMap[stage.color]}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`h-5 w-5 rounded-lg bg-${stage.color}-100 border border-${stage.color}-200 flex items-center justify-center`}>
+                  <span className="text-[10px] font-bold text-xs">{si + 1}</span>
+                </div>
+                <div>
+                  <div className="text-[11px] font-black text-zinc-900">{stage.label}</div>
+                  <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">{stage.sublabel}</div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {stage.nodes.map((node, ni) => (
+                  <div key={ni} className="flex items-center gap-2 bg-white/60 rounded-lg px-2 py-1.5">
+                    <span className="text-[11px]">{node.icon}</span>
+                    <span className="text-[10px] font-mono font-bold text-zinc-700">{node.text}</span>
+                    {ni < stage.nodes.length - 1 && (
+                      <div className="ml-auto">
+                        <ChevronRight className="h-3 w-3 text-zinc-400" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 区块3：沙盒 01 */}
+      <div className="mt-8 space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            // SANDBOX 01 / RAG 智能问答测试沙盒
+          </span>
+          <div className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-600">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>可交互演示</span>
+          </div>
+        </div>
+        <div className="bg-zinc-50 rounded-3xl p-4 border border-zinc-200">
+          <RAGSandbox />
+        </div>
+      </div>
+
+      {/* 区块4：沙盒 02 */}
+      <div className="mt-8 space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            // SANDBOX 02 / Action-Agent 智能工单调度与人机协同
+          </span>
+          <div className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-600">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>可交互演示</span>
+          </div>
+        </div>
+        <div className="bg-zinc-50 rounded-3xl p-4 border border-zinc-200">
+          <ActionAgentSandbox />
+        </div>
+      </div>
+
+      {/* 区块5：沙盒 03 */}
+      <div className="mt-8 space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            // SANDBOX 03 / OTA 浏览器插件兜底 (Copilot 模式)
+          </span>
+          <div className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-600">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>可交互演示</span>
+          </div>
+        </div>
+        <div className="bg-zinc-50 rounded-3xl p-4 border border-zinc-200">
+          <OTACopilotSandbox />
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+// ─── Main Export ──────────────────────────────────────────────────────────────
+
+export default function ProjectDetailModal({ project, isOpen, onClose, onSelectProject }: ProjectDetailModalProps) {
+  if (!isOpen || !project) return null;
+
+  const category = CATEGORIES.find(c => c.projects.some(p => p.id === project.id));
+  const categoryName = category ? category.name : "垂直产品赛道";
+  const item = projectDetailsData[project.id] || DEFAULT_DETAIL;
+  const isRAGHotel = project.id === 'rag-hotel';
+  const isYuntian = project.id === 'idc-llm';
+  const isDCIM = project.id === 'idc-twin';
+  const isBidding = project.id === 'bidding-agent';
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 cursor-pointer"
+      />
+
+      {/* Drawer */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        className="relative z-50 h-screen w-full sm:max-w-3xl md:max-w-[44rem] lg:max-w-[48rem] bg-white text-zinc-950 shadow-2xl flex flex-col outline-none"
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-6 left-6 md:left-8 z-50 w-12 h-12 rounded-full border border-zinc-250 bg-white hover:bg-zinc-50 flex items-center justify-center text-zinc-500 hover:text-zinc-950 hover:border-zinc-400 font-bold shadow-xs hover:shadow-md cursor-pointer transition-all hover:scale-105"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto scrollbar-none px-6 md:px-8 pb-10">
+          {isBidding ? (
+            <BiddingDetailView project={project} />
+          ) : isRAGHotel ? (
+            <RAGHotelDetailView project={project} />
+          ) : isYuntian ? (
+            <YuntianDetailView project={project} />
+          ) : isDCIM ? (
+            <DCIMDetailView project={project} />
+          ) : (
+            <OriginalDetailView
+              project={project}
+              item={item}
+              categoryName={categoryName}
+              onClose={onClose}
+            />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-zinc-100 bg-white/95 backdrop-blur-md px-6 md:px-8 py-4">
+          <p className="text-[10px] font-mono text-zinc-400">
+            INNOSTAY SYSTEM \u00b7 PORTFOLIO
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1.5 rounded-xl bg-[#0A0A0C] px-5 py-2.5 font-sans text-xs font-bold text-white hover:bg-zinc-800 transition active:scale-98 cursor-pointer shadow-xs"
+          >
+            <Check className="h-3.5 w-3.5 text-emerald-400" />
+            <span>返回工作台</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

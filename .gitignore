@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+.vercel
+*.bak
+*.backup
+.workbuddy/
+.vscode/
+*.zip
+*.dmg

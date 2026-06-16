@@ -1,0 +1,6 @@
+{
+  "name": "SyncEcho",
+  "description": "房晨曦 (SyncEcho) - 资深 AI & B端产品经理个人站",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

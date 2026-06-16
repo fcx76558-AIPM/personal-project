@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人站项目 - 代码浏览</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0c;
+      color: #fafafa;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #18181b;
+      border-right: 1px solid #27272a;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #27272a;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fafafa;
+      margin-bottom: 4px;
+    }
+    
+    .sidebar-header p {
+      font-size: 11px;
+      color: #71717a;
+      font-family: monospace;
+    }
+    
+    .file-tree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+    
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      margin: 2px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #a1a1aa;
+      transition: all 0.15s;
+    }
+    
+    .tree-item:hover {
+      background: #27272a;
+      color: #fafafa;
+    }
+    
+    .tree-item.active {
+      background: #27272a;
+      color: #10b981;
+      font-weight: 600;
+    }
+    
+    .tree-item.folder {
+      color: #d4d4d8;
+      font-weight: 600;
+    }
+    
+    .tree-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    
+    /* Main Content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+    }
+    
+    .file-path {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #a1a1aa;
+      font-family: monospace;
+    }
+    
+    .file-path span {
+      color: #10b981;
+    }
+    
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      padding: 6px 12px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #fafafa;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn:hover {
+      background: #3f3f46;
+    }
+    
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+    }
+    
+    pre {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d4d4d8;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .line {
+      display: flex;
+      gap: 16px;
+      padding: 2px 0;
+    }
+    
+    .line:hover {
+      background: #18181b;
+    }
+    
+    .line-number {
+      color: #52525b;
+      text-align: right;
+      min-width: 40px;
+      user-select: none;
+    }
+    
+    .line-content {
+      flex: 1;
+    }
+    
+    /* Syntax Highlighting */
+    .keyword { color: #c678dd; }
+    .string { color: #98c379; }
+    .comment { color: #5c6370; font-style: italic; }
+    .function { color: #61afef; }
+    .number { color: #d19a66; }
+    .operator { color: #56b6c2; }
+    
+    /* Welcome Screen */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      color: #71717a;
+    }
+    
+    .welcome h2 {
+      font-size: 24px;
+      color: #fafafa;
+      margin-bottom: 12px;
+    }
+    
+    .welcome p {
+      font-size: 14px;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    
+    /* Issues Panel */
+    .issues-panel {
+      width: 320px;
+      background: #18181b;
+      border-left: 1px solid #27272a;
+      padding: 20px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    
+    .issues-panel h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fafafa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+    
+    .issue-card {
+      padding: 12px;
+      background: #27272a;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 3px solid;
+    }
+    
+    .issue-card.critical {
+      border-color: #ef4444;
+    }
+    
+    .issue-card.warning {
+      border-color: #f59e0b;
+    }
+    
+    .issue-card.info {
+      border-color: #3b82f6;
+    }
+    
+    .issue-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fafafa;
+      margin-bottom: 6px;
+    }
+    
+    .issue-desc {
+      font-size: 11px;
+      color: #a1a1aa;
+      line-height: 1.5;
+    }
+    
+    .issue-file {
+      font-size: 10px;
+      color: #71717a;
+      font-family: monospace;
+      margin-top: 8px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>📁 个人站_副本3</h1>
+      <p>/Users/fangchenxi/Downloads/</p>
+    </div>
+    <div class="file-tree" id="fileTree">
+      <!-- Files will be loaded here -->
+    </div>
+  </div>
+  
+  <div class="main">
+    <div class="toolbar">
+      <div class="file-path">
+        <span>📄</span>
+        <span id="currentFile">选择文件开始浏览</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn" onclick="copyCode()">📋 复制</button>
+        <button class="btn" onclick="location.reload()">🔄 刷新</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <div class="welcome">
+        <h2>👈 选择文件开始浏览</h2>
+        <p>从左侧文件树中选择一个文件，将在此处显示代码内容。</p>
+        <p style="margin-top: 16px; color: #ef4444;">⚠️ 发现 4 个关键问题需要修复</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="issues-panel">
+    <h3>🐛 代码问题列表</h3>
+    
+    <div class="issue-card critical">
+      <div class="issue-title">❌ 表单提交无效</div>
+      <div class="issue-desc">handleFormSubmit 函数只是模拟成功状态，没有实际提交逻辑。用户填写的联系表单无法真正发送。</div>
+      <span class="issue-file">📄 src/App.tsx:45-55</span>
+    </div>
+    
+    <div class="issue-card critical">
+      <div class="issue-title">❌ 依赖声明错误</div>
+      <div class="issue-desc">express 和 dotenv 声明了但项目中没有服务器端代码。vite 重复声明。</div>
+      <span class="issue-file">📄 package.json</span>
+    </div>
+    
+    <div class="issue-card warning">
+      <div class="issue-title">⚠️ 模板默认值未修改</div>
+      <div class="issue-desc">index.html 的 title 还是 "My Google AI Studio App"，lang 属性应该是 zh-CN。</div>
+      <span class="issue-file">📄 index.html</span>
+    </div>
+    
+    <div class="issue-card warning">
+      <div class="issue-title">⚠️ 备份文件污染</div>
+      <div class="issue-desc">src 目录下有 11 个 .backup 和 .bak 文件，应该使用 Git 版本控制。</div>
+      <span class="issue-file">📄 src/</span>
+    </div>
+    
+    <div class="issue-card info">
+      <div class="issue-title">💡 data.ts 过大</div>
+      <div class="issue-desc">数据文件 73KB，所有项目数据硬编码。建议使用 CMS 或 API。</div>
+      <span class="issue-file">📄 src/data.ts</span>
+    </div>
+  </div>
+  
+  <script>
+    const files = [
+      { name: 'package.json', path: 'package.json', icon: '📦' },
+      { name: 'index.html', path: 'index.html', icon: '🌐' },
+      { name: 'vite.config.ts', path: 'vite.config.ts', icon: '⚙️' },
+      { name: 'tsconfig.json', path: 'tsconfig.json', icon: '📝' },
+      { name: 'README.md', path: 'README.md', icon: '📖' },
+      { name: '', divider: true },
+      { name: 'src/', folder: true, icon: '📁' },
+      { name: 'main.tsx', path: 'src/main.tsx', icon: '⚡', indent: 1 },
+      { name: 'App.tsx', path: 'src/App.tsx', icon: '⚛️', indent: 1 },
+      { name: 'types.ts', path: 'src/types.ts', icon: '📝', indent: 1 },
+      { name: 'data.ts', path: 'src/data.ts', icon: '💾', indent: 1 },
+      { name: 'index.css', path: 'src/index.css', icon: '🎨', indent: 1 },
+      { name: '', divider: true },
+      { name: 'components/', folder: true, icon: '📁' },
+      { name: 'Header.tsx', path: 'src/components/Header.tsx', icon: '🧩', indent: 2 },
+      { name: 'SkillMatrix.tsx', path: 'src/components/SkillMatrix.tsx', icon: '🧩', indent: 2 },
+      { name: 'FeaturedProjects.tsx', path: 'src/components/FeaturedProjects.tsx', icon: '🧩', indent: 2 },
+      { name: 'Timeline.tsx', path: 'src/components/Timeline.tsx', icon: '🧩', indent: 2 },
+    ];
+    
+    let currentContent = '';
+    
+    function renderFileTree() {
+      const tree = document.getElementById('fileTree');
+      tree.innerHTML = '';
+      
+      files.forEach(file => {
+        if (file.divider) {
+          const divider = document.createElement('div');
+          divider.style.cssText = 'height: 1px; background: #27272a; margin: 8px 0;';
+          tree.appendChild(divider);
+          return;
+        }
+        
+        const item = document.createElement('div');
+        item.className = 'tree-item' + (file.folder ? ' folder' : '');
+        item.style.paddingLeft = (file.indent || 0) * 20 + 12 + 'px';
+        
+        item.innerHTML = `
+          <span class="tree-icon">${file.icon}</span>
+          <span>${file.name}</span>
+        `;
+        
+        if (file.path) {
+          item.onclick = () => loadFile(file.path, file.name);
+        }
+        
+        tree.appendChild(item);
+      });
+    }
+    
+    async function loadFile(path, name) {
+      try {
+        const response = await fetch(path);
+        const text = await response.text();
+        currentContent = text;
+        
+        document.getElementById('currentFile').innerHTML = `<span>${name}</span>`;
+        
+        const lines = text.split('\n');
+        const content = document.getElementById('content');
+        content.innerHTML = '<pre>' + lines.map((line, i) => 
+          `<div class="line">
+            <span class="line-number">${i + 1}</span>
+            <span class="line-content">${escapeHtml(line)}</span>
+          </div>`
+        ).join('') + '</pre>';
+        
+        // Highlight active file
+        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+        event.target.closest('.tree-item').classList.add('active');
+        
+      } catch (err) {
+        alert('无法加载文件: ' + err.message);
+      }
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function copyCode() {
+      if (!currentContent) {
+        alert('请先选择文件');
+        return;
+      }
+      navigator.clipboard.writeText(currentContent).then(() => {
+        alert('✅ 代码已复制到剪贴板');
+      });
+    }
+    
+    // Init
+    renderFileTree();
+  </script>
+</body>
+</html>

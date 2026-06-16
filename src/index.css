@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+  --animate-breathe: breathe 3s ease-in-out infinite;
+
+  /* ── Semantic brand system ── */
+  --color-brand:       #10b981;   /* emerald-500 — 主品牌色 */
+  --color-brand-dim:   #d1fae5;   /* emerald-100 — 品牌浅底 */
+  --color-brand-dark:  #0a2a0f;   /* 深色页面背景 */
+  --color-brand-glow:  rgba(16, 185, 129, 0.18);
+
+  /* ── Semantic surface system ── */
+  --color-page-bg:     #F4F4F6;
+  --color-surface:     #FFFFFF;
+  --color-surface-alt: #F4F4F6;   /* zinc-100 等效 */
+
+  /* ── Semantic text system ── */
+  --color-text-h:      #09090B;   /* zinc-950 */
+  --color-text-b:      #52525B;   /* zinc-600 正文 */
+  --color-text-m:     #A1A1AA;   /* zinc-400 次要 */
+
+  /* ── Semantic border system ── */
+  --color-border:      #E4E4E7;   /* zinc-200 */
+  --color-border-dark: #27272A;   /* zinc-700 暗色边框 */
+
+  /* ── Dot grid texture ── */
+  --color-dot:         rgba(99, 102, 241, 0.08);
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(99, 102, 241, 0); }
+  50%       { opacity: 0.7; box-shadow: 0 0 14px rgba(16, 185, 129, 0.18); }
+}
+
+/* Dot grid background utility */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--color-dot) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbar thin utility */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d8 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 9999px;
+}
