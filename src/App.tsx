@@ -169,23 +169,6 @@ export default function App() {
 
             </div>
 
-            {/* Lower Section: Academic / Education background */}
-            <div className="mt-6 pt-6 border-t border-zinc-900">
-              <span className="font-mono text-[9px] font-bold text-zinc-500 tracking-widest uppercase block mb-3">
-                [ EDUCATION & DEGREE / 教育背景 ]
-              </span>
-              <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border border-[#1E1E24]/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h4 className="text-xs font-bold text-zinc-100 font-sans tracking-tight">山东财经大学东方学院</h4>
-                  <p className="text-xs text-zinc-400 font-sans mt-1">2015.09 - 2019.06 (本科毕业) · 市场营销专业 · 学士学位</p>
-                </div>
-                <div className="w-full sm:w-auto text-right">
-                  <span className="inline-block bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10.5px] font-mono font-semibold px-2.5 py-1 rounded">
-                    BACHELOR_DEGREE
-                  </span>
-                </div>
-              </div>
-            </div>
 
           </div>
 
